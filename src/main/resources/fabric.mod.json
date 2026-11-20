@@ -5,7 +5,10 @@
   "name": "Real Water",
   "description": "Agua con fisica mas realista y ligera.",
   "environment": "*",
-  "entrypoints": { "main": ["com.realwater.RealWater"] },
+  "entrypoints": {
+    "main": ["com.realwater.RealWater"],
+    "client": ["com.realwater.RealWaterClient"]
+  },
   "mixins": ["realwater.mixins.json"],
-  "depends": { "fabricloader": ">=0.16.0", "minecraft": "1.21.1", "java": ">=21" }
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": "1.21.1", "java": ">=21", "fabric-api": "*" }
 }
