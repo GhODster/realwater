@@ -24,11 +24,14 @@ public final class WaterSim {
     public static int limitIndex = 1;
     public static int limit = LIMITS[1];
 
-    private static final float H = 0.16f;
+    // Las particulas miden 0.10 de ancho (SIZE 0.05 en el renderer).
+    private static final float H_REP = 0.105f;   // radio de repulsion (solo al tocarse)
+    private static final float MIN_D = 0.095f;   // distancia minima: nunca se meten una en otra
+    private static final float ADH = 0.15f;      // radio de adherencia (velocidad compartida al caer)
     private static final int TABLE = 32768;
     private static final int MAX_NEIGHBORS = 40;
-    private static final int SLEEP_TICKS = 30;
-    private static final float SLEEP_SPEED2 = 0.002f;
+    private static final int SLEEP_TICKS = 40;
+    private static final float SLEEP_SPEED2 = 0.0005f;
     private static final int MAX_ENTITIES = 32;
     private static final int DEAD = Integer.MAX_VALUE;
     private static final Random RNG = new Random();
@@ -147,17 +150,19 @@ public final class WaterSim {
         Arrays.fill(head, -1);
         for (int i = 0; i < count; i++) {
             ox[i] = px[i]; oy[i] = py[i]; oz[i] = pz[i];
-            int b = bucket(MathHelper.floor(px[i] / H), MathHelper.floor(py[i] / H), MathHelper.floor(pz[i] / H));
+            int b = bucket(MathHelper.floor(px[i] / ADH), MathHelper.floor(py[i] / ADH), MathHelper.floor(pz[i] / ADH));
             next[i] = head[b];
             head[b] = i;
         }
 
-        // Fuerzas: presion, cohesion y viscosidad (solo particulas despiertas).
+        // Fuerzas: repulsion al tocarse, separacion dura (sin solaparse) y adherencia por velocidad.
+        // NO hay atraccion a distancia: las particulas no se mueven solas para juntarse.
         for (int i = 0; i < count; i++) {
             if (rest[i] >= SLEEP_TICKS) continue;
             float spi = vx[i] * vx[i] + vy[i] * vy[i] + vz[i] * vz[i];
-            int cx = MathHelper.floor(px[i] / H), cy = MathHelper.floor(py[i] / H), cz = MathHelper.floor(pz[i] / H);
+            int cx = MathHelper.floor(px[i] / ADH), cy = MathHelper.floor(py[i] / ADH), cz = MathHelper.floor(pz[i] / ADH);
             int ns = 0, neigh = 0;
+            float sx = 0, sy = 0, sz = 0;
             scan:
             for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) {
                 int b = bucket(cx + dx, cy + dy, cz + dz);
@@ -169,21 +174,37 @@ public final class WaterSim {
                     if (j == i) continue;
                     float ddx = px[i] - px[j], ddy = py[i] - py[j], ddz = pz[i] - pz[j];
                     float d2 = ddx * ddx + ddy * ddy + ddz * ddz;
-                    if (d2 >= H * H || d2 < 1e-8f) continue;
+                    if (d2 >= ADH * ADH || d2 < 1e-8f) continue;
                     if (++neigh > MAX_NEIGHBORS) break scan;
-                    if (rest[j] >= SLEEP_TICKS && spi > 0.004f) rest[j] = 0; // despertar vecina
+                    boolean jAsleep = rest[j] >= SLEEP_TICKS;
+                    if (jAsleep && spi > 0.004f) rest[j] = 0;   // despertar vecina
                     float d = (float) Math.sqrt(d2);
-                    float q = 1f - d / H;
-                    float push = q * q * 0.05f / d;
-                    vx[i] += ddx * push; vy[i] += ddy * push; vz[i] += ddz * push;
-                    if (q < 0.55f) {
-                        float pull = 0.03f * (0.55f - q) / d;
-                        vx[i] -= ddx * pull; vy[i] -= ddy * pull; vz[i] -= ddz * pull;
+
+                    if (d < H_REP) {                              // empuje suave al tocarse
+                        float q = 1f - d / H_REP;
+                        float push = q * 0.04f / d;
+                        vx[i] += ddx * push; vy[i] += ddy * push; vz[i] += ddz * push;
                     }
-                    float visc = 0.08f * q;
+                    if (d < MIN_D) {                              // separacion dura: nunca solapadas
+                        float overlap = MIN_D - d;
+                        float corr = overlap * (jAsleep ? 1.0f : 0.5f) / d;
+                        sx += ddx * corr; sy += ddy * corr; sz += ddz * corr;
+                        if (Math.abs(ddx) + Math.abs(ddz) < 0.3f * d) {   // columna vertical: tumbarla
+                            sx += (RNG.nextFloat() - 0.5f) * overlap * 0.6f;
+                            sz += (RNG.nextFloat() - 0.5f) * overlap * 0.6f;
+                        }
+                    }
+                    float visc = 0.12f * (1f - d / ADH);          // adherencia: se mueven juntas al caer
                     vx[i] += (vx[j] - vx[i]) * visc;
                     vy[i] += (vy[j] - vy[i]) * visc;
                     vz[i] += (vz[j] - vz[i]) * visc;
+                }
+            }
+            if (sx != 0 || sy != 0 || sz != 0) {
+                float m2 = sx * sx + sy * sy + sz * sz;
+                if (m2 > 0.0025f) { float k = 0.05f / (float) Math.sqrt(m2); sx *= k; sy *= k; sz *= k; }
+                if (!solid(w, px[i] + sx, py[i] + sy, pz[i] + sz)) {
+                    px[i] += sx; py[i] += sy; pz[i] += sz;
                 }
             }
         }
@@ -203,7 +224,7 @@ public final class WaterSim {
             }
 
             vy[i] -= 0.045f;
-            vx[i] *= 0.995f; vy[i] *= 0.995f; vz[i] *= 0.995f;
+            vx[i] *= 0.99f; vy[i] *= 0.99f; vz[i] *= 0.99f;
             float sp2 = vx[i] * vx[i] + vy[i] * vy[i] + vz[i] * vz[i];
             if (sp2 > 0.81f) {
                 float s = 0.9f / (float) Math.sqrt(sp2);
@@ -214,7 +235,7 @@ public final class WaterSim {
             float ny = py[i] + vy[i];
             if (solid(w, px[i], ny, pz[i])) {
                 float impact = vy[i];
-                if (impact < 0) { vx[i] *= 0.85f; vz[i] *= 0.85f; }
+                if (impact < 0) { vx[i] *= 0.96f; vz[i] *= 0.96f; }
                 vy[i] *= -0.1f;
                 if (impact < -0.5f && count < limit - 50 && RNG.nextFloat() < 0.35f) {
                     for (int k = 0; k < 2; k++) {
