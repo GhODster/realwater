@@ -21,6 +21,7 @@ public class RealWaterClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        RealWater.pourHandler = WaterSim::pour;
         spray = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.realwater.spray", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_R, "category.realwater"));
         clear = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -37,7 +38,7 @@ public class RealWaterClient implements ClientModInitializer {
             while (clear.wasPressed()) WaterSim.clear();
             while (quality.wasPressed()) {
                 int l = WaterSim.cycleLimit();
-                client.player.sendMessage(Text.literal("Real Water - limite de particulas: " + l), true);
+                client.player.sendMessage(Text.literal("Real Water - particle limit: " + l), true);
             }
             if (spray.isPressed()) emit(client.player);
             WaterSim.tick(client.world, client.player);
@@ -56,9 +57,9 @@ public class RealWaterClient implements ClientModInitializer {
                     eye.x + look.x * t + RNG.nextGaussian() * 0.02,
                     eye.y - 0.2 + look.y * t + RNG.nextGaussian() * 0.02,
                     eye.z + look.z * t + RNG.nextGaussian() * 0.02,
-                    look.x * 0.6 + vel.x * 0.5 + RNG.nextGaussian() * 0.02,
-                    look.y * 0.6 + vel.y * 0.5 + RNG.nextGaussian() * 0.02,
-                    look.z * 0.6 + vel.z * 0.5 + RNG.nextGaussian() * 0.02);
+                    look.x * 0.45 + vel.x * 0.5 + RNG.nextGaussian() * 0.02,
+                    look.y * 0.45 + vel.y * 0.5 + RNG.nextGaussian() * 0.02,
+                    look.z * 0.45 + vel.z * 0.5 + RNG.nextGaussian() * 0.02);
         }
     }
 }

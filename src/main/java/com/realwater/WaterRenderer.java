@@ -59,7 +59,7 @@ public final class WaterRenderer {
 
             int c = WaterSim.col[i];
             int r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
-            int a = 170;
+            int a = 120;
             buf.vertex(m, x - rx - ux, y - ry - uy, z - rz - uz).color(r, g, b, a);
             buf.vertex(m, x + rx - ux, y + ry - uy, z + rz - uz).color(r, g, b, a);
             buf.vertex(m, x + rx + ux, y + ry + uy, z + rz + uz).color(r, g, b, a);

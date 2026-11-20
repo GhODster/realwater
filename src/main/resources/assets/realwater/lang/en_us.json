@@ -1,6 +1,12 @@
 {
   "key.realwater.spray": "Spray water",
   "key.realwater.clear": "Clear particle water",
+  "key.realwater.quality": "Cycle particle limit",
   "category.realwater": "Real Water",
-  "key.realwater.quality": "Particle limit"
+  "item.realwater.water_bucket_1000": "Water Bucket (1,000 particles)",
+  "item.realwater.water_bucket_3000": "Water Bucket (3,000 particles)",
+  "item.realwater.water_bucket_4500": "Water Bucket (4,500 particles)",
+  "item.realwater.water_bucket_8000": "Water Bucket (8,000 particles)",
+  "item.realwater.water_bucket_15000": "Water Bucket (15,000 particles)",
+  "item.realwater.water_bucket_25000": "Water Bucket (25,000 particles)"
 }
