@@ -32,7 +32,7 @@ public class RealWaterClient implements ClientModInitializer {
             if (client.isPaused()) return;
             while (clear.wasPressed()) WaterSim.clear();
             if (spray.isPressed()) emit(client.player);
-            WaterSim.tick(client.world);
+            WaterSim.tick(client.world, client.player);
         });
 
         WorldRenderEvents.LAST.register(WaterRenderer::render);
@@ -42,12 +42,12 @@ public class RealWaterClient implements ClientModInitializer {
         Vec3d eye = p.getEyePos();
         Vec3d look = p.getRotationVec(1.0f);
         Vec3d vel = p.getVelocity();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 16; i++) {
             WaterSim.emit(
                     eye.x + look.x * 0.8, eye.y - 0.2 + look.y * 0.8, eye.z + look.z * 0.8,
                     look.x * 0.6 + vel.x * 0.5 + RNG.nextGaussian() * 0.03,
                     look.y * 0.6 + vel.y * 0.5 + RNG.nextGaussian() * 0.03,
-                    look.z * 0.6 + vel.z * 0.5 + RNG.nextGaussian() * 0.03);
+                    look.z * 0.6 + vel.z * 0.5 + RNG.nextGaussian() * 0.02);
         }
     }
 }
