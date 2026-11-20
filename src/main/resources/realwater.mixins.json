@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "package": "com.realwater.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["WaterFluidMixin"],
+  "client": ["WaterFluidClientMixin"],
+  "injectors": { "defaultRequire": 1 }
+}
