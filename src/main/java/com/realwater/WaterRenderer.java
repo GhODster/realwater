@@ -17,7 +17,8 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public final class WaterRenderer {
-    private static final float SIZE = 0.07f;
+    private static final float SIZE = 0.05f;
+    private static final float MAX_DIST2 = 72f * 72f;
 
     private WaterRenderer() {}
 
@@ -36,6 +37,8 @@ public final class WaterRenderer {
         Quaternionf rot = cam.getRotation();
         Vector3f right = new Vector3f(1, 0, 0).rotate(rot).mul(SIZE);
         Vector3f up = new Vector3f(0, 1, 0).rotate(rot).mul(SIZE);
+        float rx = right.x, ry = right.y, rz = right.z;
+        float ux = up.x, uy = up.y, uz = up.z;
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -45,26 +48,26 @@ public final class WaterRenderer {
 
         BufferBuilder buf = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
         int n = WaterSim.count;
+        int drawn = 0;
+        float cx = (float) cp.x, cy = (float) cp.y, cz = (float) cp.z;
         for (int i = 0; i < n; i++) {
             float x = WaterSim.ox[i] + (WaterSim.px[i] - WaterSim.ox[i]) * pt;
             float y = WaterSim.oy[i] + (WaterSim.py[i] - WaterSim.oy[i]) * pt;
             float z = WaterSim.oz[i] + (WaterSim.pz[i] - WaterSim.oz[i]) * pt;
+            float dx = x - cx, dy = y - cy, dz = z - cz;
+            if (dx * dx + dy * dy + dz * dz > MAX_DIST2) continue;
 
-            float light = WaterSim.light[i];
-            float foam = Math.min(1f, WaterSim.speed(i) * 1.5f) * 0.6f;
-            int r = (int) ((50 + (255 - 50) * foam) * light);
-            int g = (int) ((120 + (255 - 120) * foam) * light);
-            int b = (int) ((220 + (255 - 220) * foam) * light);
-            int a = 160;
-
-            float rx = right.x, ry = right.y, rz = right.z;
-            float ux = up.x, uy = up.y, uz = up.z;
+            int c = WaterSim.col[i];
+            int r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+            int a = 150;
             buf.vertex(m, x - rx - ux, y - ry - uy, z - rz - uz).color(r, g, b, a);
             buf.vertex(m, x + rx - ux, y + ry - uy, z + rz - uz).color(r, g, b, a);
             buf.vertex(m, x + rx + ux, y + ry + uy, z + rz + uz).color(r, g, b, a);
             buf.vertex(m, x - rx + ux, y - ry + uy, z - rz + uz).color(r, g, b, a);
+            drawn++;
         }
-        BufferRenderer.drawWithGlobalProgram(buf.end());
+        if (drawn > 0) BufferRenderer.drawWithGlobalProgram(buf.end());
+        else buf.endNullable();
 
         RenderSystem.depthMask(true);
         RenderSystem.enableCull();

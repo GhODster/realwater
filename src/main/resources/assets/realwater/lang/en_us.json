@@ -1,5 +1,6 @@
 {
   "key.realwater.spray": "Spray water",
   "key.realwater.clear": "Clear particle water",
-  "category.realwater": "Real Water"
+  "category.realwater": "Real Water",
+  "key.realwater.quality": "Particle limit"
 }
